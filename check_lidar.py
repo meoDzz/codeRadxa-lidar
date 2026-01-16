@@ -3,6 +3,9 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 import math
+
+from serial_module import SerialDriver
+
 class LidarReader(Node):
     def __init__(self):
         super().__init__('lidar_reader_node')
@@ -12,13 +15,15 @@ class LidarReader(Node):
             '/scan',
             self.listener_callback,
             10) # 10 là kích thước hàng chờ (QoS)
+        self.driver = SerialDriver(port='/dev/ttyACM0')
+
 
     def listener_callback(self, msg):
         # msg.ranges là một danh sách chứa hàng trăm con số khoảng cách
         # Lấy phần tử ở giữa danh sách (thường là góc trước mặt robot)
         center_index = int(len(msg.ranges) / 2)
         distance = msg.ranges[center_index]
-
+        
         # In ra màn hình
         # print(msg)
         # print("Min",min(msg.ranges))
@@ -47,7 +52,8 @@ class LidarReader(Node):
             # Tách ra để sử dụng
             min_angle = closest_point[0]
             min_dist  = closest_point[1]
-
+            # self.driver.send_velocity(f"{min_dist:.2f}, {math.degrees(min_angle):.1f}")
+            self.driver.send_velocity(min_dist,math.degrees(min_angle))
             print(f"Vật gần nhất cách {min_dist:.2f}m ở góc {math.degrees(min_angle):.1f} độ")
         else:
             print("Không tìm thấy vật cản nào!")

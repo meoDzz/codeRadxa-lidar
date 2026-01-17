@@ -9,7 +9,7 @@ class DeviceScanner:
         """Quét các cổng nối tiếp khớp với mẫu đã cho"""
         
         pattern_usbPorts = '/dev/ttyUSB*'
-        pattern_acmPorts = '/dev/ttyACM*'
+        pattern_acmPorts = '/dev/ttyUSB*'
 
         found_devices = { "lidar": None, "esp32": None }
         #1 find lidar sensor

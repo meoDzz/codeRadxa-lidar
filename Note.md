@@ -146,3 +146,19 @@ Trong code Python điều khiển ESP32, khai báo cổng kết nối là:
 ```python
 self.driver = SerialDriver(port='/dev/esp')
 ```
+
+
+# 
+# Start robot and sensor
+
+## 1. Start the ros2 environment and run lidar sensor
+```
+cd ros2_ws
+source install/setup.bash
+ros2 launch sllidar_ros2 sllidar_a1_launch.py serial_port:=/dev/lidar serial_baudrate:=115200
+```
+## 2. Run the robot and transfer data to microcontroller
+```
+cd ros2_ws/scripts
+python3 robot_main.py
+```

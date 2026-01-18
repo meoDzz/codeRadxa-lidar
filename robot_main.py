@@ -15,7 +15,7 @@ class LidarReader(Node):
             '/scan',
             self.listener_callback,
             10) # 10 là kích thước hàng chờ (QoS)
-        self.driver = SerialDriver(port='/dev/ttyACM0')
+        self.driver = SerialDriver(port='/dev/esp')
 
 
     def listener_callback(self, msg):

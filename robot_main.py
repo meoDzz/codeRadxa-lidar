@@ -34,9 +34,9 @@ class LidarReader(Node):
             # Hiển thị khoảng cách (làm tròn 2 số lẻ)
             print(f"Vật cản phía trước cách: {distance:.2f} mét")
         
-        print(msg.angle_min)
-        print(msg.angle_max)
-        print(msg.angle_increment)
+        # print(msg.angle_min)
+        # print(msg.angle_max)
+        # print(msg.angle_increment)
         print("----")
         processed_ranges =[]
         for i, d in enumerate(msg.ranges):
@@ -53,8 +53,9 @@ class LidarReader(Node):
             min_angle = closest_point[0]
             min_dist  = closest_point[1]
             # self.driver.send_velocity(f"{min_dist:.2f}, {math.degrees(min_angle):.1f}")
-            self.driver.send_velocity(min_dist,math.degrees(min_angle))
-            print(f"Vật gần nhất cách {min_dist:.2f}m ở góc {math.degrees(min_angle):.1f} độ")
+            if 0.05 < min_dist < 0.3:
+                self.driver.send_velocity(min_dist,math.degrees(min_angle))
+                print(f"Vật gần nhất cách {min_dist:.2f}m ở góc {math.degrees(min_angle):.1f} độ")
         else:
             print("Không tìm thấy vật cản nào!")
 def main(args=None):

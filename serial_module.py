@@ -11,7 +11,7 @@ class SerialDriver:
         self.connect()
 
     def connect(self):
-        """Mở kết nối Serial an toàn"""
+        """Mở kết nối Serial an toàn lidar gửi dữ liệu về radxa."""
         try:
             self.serial_conn = serial.Serial(
                 port=self.port,

@@ -162,3 +162,7 @@ ros2 launch sllidar_ros2 sllidar_a1_launch.py serial_port:=/dev/lidar serial_bau
 cd ros2_ws/scripts
 python3 robot_main.py
 ```
+
+
+
+# Data Flow System

@@ -166,3 +166,6 @@ python3 robot_main.py
 
 
 # Data Flow System
+## Sơ đồ hệ thống Robot (CAN Bus & ROS2)
+
+![Sơ đồ xe tự hành](Diagram_System\dataFlow.drawio.svg)

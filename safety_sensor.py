@@ -29,6 +29,7 @@ try:
                 line = ser.readline().decode('utf-8').rstrip()
                 if line:
                     print(f"Nhận được: {line}")
+                ser.reset_input_buffer()
         except (serial.SerialException, OSError) as e:
             print(f"Lỗi kết nối: {e}. Đang thử kết nối lại Safety Sensor System...")
             ser.close()

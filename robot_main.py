@@ -1,9 +1,7 @@
-
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 import math
-import time
 from serial_module import SerialDriver
 
 class LidarReader(Node):
@@ -14,67 +12,52 @@ class LidarReader(Node):
             LaserScan,
             '/scan',
             self.listener_callback,
-            10) # 10 là kích thước hàng chờ (QoS)
-        # self.last_has_obstacle = None
+            10)
+        
+        # Khởi tạo driver để gửi lệnh xuống VĐK qua cổng /dev/esp
         self.driver = SerialDriver(port='/dev/esp')
-
+        self.get_logger().info("Lidar Reader Node has started.")
 
     def listener_callback(self, msg):
-        # msg.ranges là một danh sách chứa hàng trăm con số khoảng cách
-        # Lấy phần tử ở giữa danh sách (thường là góc trước mặt robot)
-        center_index = int(len(msg.ranges) / 2)
-        distance = msg.ranges[center_index]
+        # 1. Tạo danh sách points [góc, khoảng cách] và lọc 'vùng chết' 66-73 độ ngay lập tức
+        # Loại bỏ luôn các điểm có khoảng cách <= 0 (nhiễu hoặc lỗi tia)
+        points = []
+        for i, dist in enumerate(msg.ranges):
+            # Kiểm tra khoảng cách hợp lệ trước khi tính toán góc để tiết kiệm CPU
+            if dist > 0.02 and dist != float('inf'):
+                angle = msg.angle_min + i * msg.angle_increment
+                angle_deg = abs(math.degrees(angle))
+                
+                # CHỈ giữ lại điểm nằm NGOÀI khoảng [64, 75]
+                if not (60 <= angle_deg <= 75):
+                    points.append((angle, dist))
 
-        # In ra màn hình
-        # print(msg)
-        # print("Min",min(msg.ranges))
-
-        if distance == float('inf'):
-            print("Phía trước thoáng (Ngoài tầm quét)")
-        else:
-            # Hiển thị khoảng cách (làm tròn 2 số lẻ)
-            print(f"Vật cản phía trước cách: {distance:.2f} mét")
-
-        # print(msg.angle_min)
-        # print(msg.angle_max)
-        # print(msg.angle_increment)
-        print("----")
-        processed_ranges =[]
-        for i, d in enumerate(msg.ranges):
-            angle = msg.angle_min + i * msg.angle_increment
-            # print(f" Góc: {angle:.2f} rad, Góc: {angle * 180 / math.pi:.2f} degree , Khoảng cách: {d:.2f} m")
-            processed_ranges.append((angle, d))
-        # print(processed_ranges)
-
-        if processed_ranges:  # Kiểm tra list có dữ liệu không để tránh lỗi crash
-            # Tìm tuple có d nhỏ nhất
-            closest_point = min(processed_ranges, key=lambda x: x[1])
-
-            # Tách ra để sử dụng
+        # 2. Xử lý sau khi đã lọc
+        if points:
+            # Tìm vật cản gần nhất trong số các điểm hợp lệ
+            closest_point = min(points, key=lambda x: x[1])
             min_angle = closest_point[0]
             min_dist  = closest_point[1]
-            # self.driver.send_velocity(f"{min_dist:.2f}, {math.degrees(min_angle):.1f}")
-            #self.driver.send_velocity(min_dist,math.degrees(min_angle))
-            #time.sleep(2)
-            #print(f"{min_dist:.2f}, {math.degrees(min_angle):.1f}")
-            #current_has_obstacle = (0.15 <= min_dist <= 0.8)
-            #if current_has_obstacle != self.last_has_obstacle:
-            #    print(f"{min_dist:.2f}, {math.degrees(min_angle):.1f}")
-            #   self.driver.send_velocity(min_dist,math.degrees(min_angle))
-            #    self.last_has_obstacle = current_has_obstacle
-            if 0.05 < min_dist < 0.8:
-                self.driver.send_velocity(min_dist,math.degrees(min_angle))
-                print(f"Vật gần nhất cách {min_dist:.2f}m ở góc {math.degrees(min_angle):.1f} độ")
+            min_angle_deg = math.degrees(min_angle)
+
+            # 3. Logic an toàn: Chỉ gửi lệnh nếu vật cản nằm trong tầm 0.05m - 0.8m
+            if 0.01 < min_dist < 0.40:
+                # Gửi dữ liệu xuống VĐK1 (Motor) qua Serial/USB
+                self.driver.send_velocity(min_dist, min_angle_deg)
+                print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
+            else:
+                # Nếu vật ở xa hơn 0.8m, có thể in ra để debug (tùy chọn)
+                pass 
         else:
-            print("Không tìm thấy vật cản nào!")
+            print("Vùng quét an toàn không có vật cản.")
 
 def main(args=None):
     rclpy.init(args=args)
     node = LidarReader()
     try:
-        rclpy.spin(node) # Giữ cho node chạy liên tục
+        rclpy.spin(node)
     except KeyboardInterrupt:
-        pass
+        print("\nNode đang dừng...")
     finally:
         node.destroy_node()
         rclpy.shutdown()

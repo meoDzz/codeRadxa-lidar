@@ -43,8 +43,14 @@ class LidarReader(Node):
             # 3. Logic an toàn: Chỉ gửi lệnh nếu vật cản nằm trong tầm 0.05m - 0.8m
             if 0.01 < min_dist < 0.40:
                 # Gửi dữ liệu xuống VĐK1 (Motor) qua Serial/USB
-                self.driver.send_velocity(min_dist, min_angle_deg)
-                print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
+                new_angle = min_angle_deg + 180
+
+                if new_angle > 180:
+                    new_angle = new_angle - 360
+                elif new_angle <= -180:
+                    new_angle = new_angle + 360
+                self.driver.send_velocity(min_dist, new_angle)
+                print(f"--- VẬT CẢN: {min_dist:.2f}m tại {new_angle:.1f} độ")
             else:
                 # Nếu vật ở xa hơn 0.8m, có thể in ra để debug (tùy chọn)
                 pass 

@@ -171,5 +171,26 @@ python3 robot_main.py
 ![Sơ đồ xe tự hành](./Diagram_System/dataFlow.drawio.svg)
 
 # NOTE
-## Robot behaviours
-1. 
+## ADD new commit
+```
+git add .
+```
+```
+git commit -m " nội dung ghi vào đây"
+```
+```
+git push
+```
+
+## Update file 
+```
+git status
+```
+
+```
+git fetch
+```
+
+```
+git pull
+```

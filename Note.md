@@ -138,10 +138,15 @@ ls -l /dev/lidar /dev/esp
 ## 3. Cập nhật lệnh chạy ROS 2
 Sau khi đã set rules thành công, câu lệnh chạy Lidar sẽ thay đổi cổng như sau:
 
+Lidar A1M8
 ```bash
 ros2 launch sllidar_ros2 sllidar_a1_launch.py serial_port:=/dev/lidar serial_baudrate:=115200
 ```
 
+Lidar C1M1_R2
+```
+ros2 launch sllidar_ros2 sllidar_c1_launch.py serial_port:=/dev/lidar serial_baudrate:=460800
+```
 Trong code Python điều khiển ESP32, khai báo cổng kết nối là:
 ```python
 self.driver = SerialDriver(port='/dev/esp')

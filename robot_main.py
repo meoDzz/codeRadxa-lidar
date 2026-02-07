@@ -56,7 +56,7 @@ class LidarReader(Node):
                 print("Vùng quét an toàn không có vật cản.")
                 pass 
         else:
-            print("Vùng quét an toàn không có vật cản.")
+            print("Vùng quét an toàn không có vật cản. Xe an toan")
 
 def main(args=None):
     rclpy.init(args=args)

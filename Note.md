@@ -168,6 +168,10 @@ cd ros2_ws/scripts
 python3 robot_main.py
 ```
 
+# Run rviz2
+```
+ros2 run rviz2 rviz2
+```
 
 
 # Data Flow System

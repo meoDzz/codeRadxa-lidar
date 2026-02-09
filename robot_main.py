@@ -27,7 +27,8 @@ class LidarReader(Node):
             if dist > 0.02 and dist != float('inf'):
                 angle = msg.angle_min + i * msg.angle_increment
                 angle_deg = math.degrees(angle)
-                points.append((angle, dist))
+                if not (40 <= angle_deg <= 82) and not (-82 <= angle_deg <= -40):
+                    points.append((angle, dist))
                 
         # 2. Xử lý sau khi đã lọc
         if points:
@@ -36,21 +37,22 @@ class LidarReader(Node):
             min_angle = closest_point[0]
             min_dist  = closest_point[1]
             min_angle_deg = math.degrees(min_angle)
-
+            print(f"--- test: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
             # 3. Logic an toàn: Chỉ gửi lệnh nếu vật cản nằm trong tầm 0.05m - 0.8m
-            if 0.01 < min_dist < 0.2:
+            if 0.01 < min_dist < 0.5:
                 # Gửi dữ liệu xuống VĐK1 (Motor) qua Serial/USB
                 # Lidar C1
                 if 0 < min_angle_deg < 180:
-                    min_angle_deg = min_angle_deg - 180
+                    min_angle_deg = -(min_angle_deg - 180)
                 else:
-                    min_angle_deg = min_angle_deg + 180
-                
-                if not (80 <= min_angle_deg <= 120) and not (-120 <= min_angle_deg <= -80):
-                    self.driver.send_velocity(min_dist, min_angle_deg)    
-                    print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
-                else:
-                    print("Vật cản nằm trong vùng chết, không gửi lệnh.")
+                    min_angle_deg = -(min_angle_deg + 180)
+                self.driver.send_velocity(min_dist, min_angle_deg)    
+                print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
+                # if not (80 <= min_angle_deg <= 120) and not (-120 <= min_angle_deg <= -100):
+                #     self.driver.send_velocity(min_dist, min_angle_deg)    
+                #     print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
+                # else:
+                #     print("Vật cản nằm trong vùng chết, không gửi lệnh.")
             else:
                 # Nếu vật ở xa hơn 0.8m, có thể in ra để debug (tùy chọn)
                 print("Vùng quét an toàn không có vật cản.")

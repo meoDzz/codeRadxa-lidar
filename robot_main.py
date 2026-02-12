@@ -8,6 +8,8 @@ class LidarReader(Node):
     def __init__(self):
         super().__init__('lidar_reader_node')
         # Đăng ký nhận tin từ topic '/scan'
+        self.count = 0
+        self.skip_rate = 1
         self.subscription = self.create_subscription(
             LaserScan,
             '/scan',
@@ -21,15 +23,19 @@ class LidarReader(Node):
     def listener_callback(self, msg):
         # 1. Tạo danh sách points [góc, khoảng cách] và lọc 'vùng chết' 66-73 độ ngay lập tức
         # Loại bỏ luôn các điểm có khoảng cách <= 0 (nhiễu hoặc lỗi tia)
+
+        self.count += 1
+        if self.count % self.skip_rate != 0:
+            return
+
         points = []
         for i, dist in enumerate(msg.ranges):
             # Kiểm tra khoảng cách hợp lệ trước khi tính toán góc để tiết kiệm CPU
-            if dist > 0.02 and dist != float('inf'):
+            if dist > 0.14 and dist != float('inf'):
                 angle = msg.angle_min + i * msg.angle_increment
                 angle_deg = math.degrees(angle)
                 if not (40 <= angle_deg <= 82) and not (-82 <= angle_deg <= -40):
-                    points.append((angle, dist))
-                
+                    points.append((angle, dist))     
         # 2. Xử lý sau khi đã lọc
         if points:
             # Tìm vật cản gần nhất trong số các điểm hợp lệ
@@ -37,17 +43,18 @@ class LidarReader(Node):
             min_angle = closest_point[0]
             min_dist  = closest_point[1]
             min_angle_deg = math.degrees(min_angle)
-            print(f"--- test: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
+            print(f"--- test: {min_dist:.2f}m tại {min_angle_deg:.2f} độ")
             # 3. Logic an toàn: Chỉ gửi lệnh nếu vật cản nằm trong tầm 0.05m - 0.8m
-            if 0.01 < min_dist < 0.5:
+            if 0.05 < min_dist < 0.5:
                 # Gửi dữ liệu xuống VĐK1 (Motor) qua Serial/USB
                 # Lidar C1
                 if 0 < min_angle_deg < 180:
                     min_angle_deg = -(min_angle_deg - 180)
                 else:
                     min_angle_deg = -(min_angle_deg + 180)
-                self.driver.send_velocity(min_dist, min_angle_deg)    
-                print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")
+                self.driver.send_velocity(round(min_dist,1),round(min_angle_deg,1))
+                # self.driver.send_velocity(1 - self.count ,1 + self.count)      
+                print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.2f} độ")
                 # if not (80 <= min_angle_deg <= 120) and not (-120 <= min_angle_deg <= -100):
                 #     self.driver.send_velocity(min_dist, min_angle_deg)    
                 #     print(f"--- VẬT CẢN: {min_dist:.2f}m tại {min_angle_deg:.1f} độ")

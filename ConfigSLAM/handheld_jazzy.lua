@@ -1,22 +1,3 @@
- # Setup Cartographer ROS2 + LIDAR C1
-
- ## 1. Install Cartographer Jazzy
- ```
- sudo apt update
-sudo apt install ros-jazzy-cartographer ros-jazzy-cartographer-ros -y
- ```
-
-## 2. Create **.lua** for hand held function (no encoder)
-
-```
-mkdir -p /home/radxa/ros2_ws/scripts/ConfigSLAM
-
-cd ~/ros2_ws/scripts/ConfigSLAM
-nano handheld_jazzy.lua
-```
-Copy and paste the below script to **handheld_jazzy.lua** the save the file
-
-```
 include "map_builder.lua"
 include "trajectory_builder.lua"
 
@@ -67,56 +48,3 @@ POSE_GRAPH.optimize_every_n_nodes = 30          -- Optimize thường xuyên hơ
 POSE_GRAPH.global_sampling_ratio = 0.003
 
 return options
-
-```
-
-# Run the map_builder
-
-# 1. Start lidar
-```
-cd ros2_ws
-source install/setup.bash
-ros2 launch sllidar_ros2 sllidar_c1_launch.py serial_port:=/dev/lidar serial_baudrate:=460800
-```
-
-
-## 2. Link the base_link to laser origin
-```
-ros2 run tf2_ros static_transform_publisher --x 0 --y 0 --z 0 --yaw 0 --pitch 0 --roll 0 --frame-id base_link --child-frame-id laser
-```
-Then check the link between the node
-```
-ros2 run tf2_tools view_frames
-```
-The link should be map -> base_link -> laser
-
-## 3. Run cartographer_ros resolution
-```
-ros2 run cartographer_ros cartographer_occupancy_grid_node -resolution 0.05
-```
-
-## 4. Run
-```
-ros2 run cartographer_ros cartographer_node -configuration_directory ~/ros2_ws/scripts/ConfigSLAM -configuration_basename handheld_jazzy.lua --ros-args -p use_sim_time:=false
-```
-If you see this [INFO] => DONE
-```
-[INFO] [1770993615.726220563] [cartographer logger]: I20260213 21:40:15.-2147483648  6373 configuration_file_resolver.cc:41] Found '/opt/ros/jazzy/share/cartographer/configuration_files/trajectory_builder.lua' for 'trajectory_builder.lua'.
-
-```
-
-## 5. Run rviz2
-```
-ros2 run rviz2 rviz2
-```
-Remember increase the value of DEPTH = 10 in topic MAP
-
-
-
-
-## 6. Save the map
-```
-ros2 run nav2_map_server map_saver_cli -f my_map_v2
-```
-
-

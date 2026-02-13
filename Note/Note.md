@@ -301,6 +301,11 @@ ros2 launch slam_toolbox online_async_launch.py \
     base_frame:=base_link
 
 
+
+
+
+
+
 ros2 launch slam_toolbox online_async_launch.py slam_params_file:=/home/radxa/ros2_ws/scripts/ConfigSLAM/slam_params_file.yaml use_sim_time:=false
 
 
@@ -2050,3 +2055,303 @@ rviz/glsl120/indexed_8bit_image.frag
  GLSL link result :
 active samplers with a different type refer to the same texture image unit
 
+
+
+ros2 launch ld_lidar_ros2 ld14.launch.py
+ros2 run rf2o_laser_odometry rf2o_laser_odometry_node --ros-args -p laser_scan_topic:=/scan -p odom_topic:=/odom -p publish_tf:=true -p base_frame_id:=base_link -p odom_frame_id:=odom -p freq:=10.0
+ros2 launch slam_toolbox online_async_launch.py use_sim_time:=false --ros-args -p map_update_interval:=0.2 -p minimum_travel_distance:=0.01 -p minimum_travel_heading:=0.01 -p mode:=mapping
+
+rosdep install --from-paths src --ignore-src -y
+/usr/bin/rosdep:6: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+  from pkg_resources import load_entry_point
+ERROR: the following packages/stacks could not have their rosdep keys resolved
+to system dependencies:
+rf2o_las
+
+
+source ~/ros2_ws/install/setup.bash
+source ~/ros2_ws/install/setup.bash
+## Cai dat chung slam
+sudo apt update
+sudo apt install ros-jazzy-slam-toolbox \ros-jazzy-nav2-rviz-plugins \ros-jazzy-tf-transformations
+
+
+### cài đặt  rf2o_laser_odometry
+
+git clone https://github.com/MAPIRlab/rf2o_laser_odometry.git
+
+cd ~/ros2_ws
+# Cài đặt các thư viện phụ trợ
+sudo apt update
+sudo apt install ros-jazzy-tf2-ros ros-jazzy-tf2-geometry-msgs ros-jazzy-nav-msgs ros-jazzy-geometry-msgs
+
+cd ~/ros2_ws
+colcon build --symlink-install --packages-select rf2o_laser_odometry
+
+# check rf2o sẵn sàng chưa
+ros2 pkg executables rf2o_laser_odometry
+
+
+lidar
+
+
+
+
+source ~/ros2_ws/install/setup.bash && ros2 run rf2o_laser_odometry rf2o_laser_odometry_node --ros-args -p laser_scan_topic:=/scan -p odom_topic:=/odom -p publish_tf:=true -p base_frame_id:=base_link -p odom_frame_id:=odom -p freq:=20.0
+
+
+ros2 launch slam_toolbox online_async_launch.py use_sim_time:=false map_update_interval:=0.2 minimum_travel_distance:=0.01 minimum_travel_heading:=0.01 mode:=mapping
+
+
+
+
+
+source ~/ros2_ws/install/setup.bash && \
+ros2 run rf2o_laser_odometry rf2o_laser_odometry_node --ros-args \
+-p laser_scan_topic:=/scan \
+-p odom_topic:=/odom \
+-p publish_tf:=true \
+-p base_frame_id:=base_link \
+-p odom_frame_id:=odom \
+-p freq:=20.0
+
+
+ros2 topic echo /scan --once | grep frame_id
+
+ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 base_link laser
+ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 map odom
+
+source ~/ros2_ws/install/setup.bash && \
+ros2 run rf2o_laser_odometry rf2o_laser_odometry_node \
+--ros-args \
+-r scan:=/scan \
+-p odom_topic:=/odom \
+-p publish_tf:=true \
+-p base_frame_id:=base_link \
+-p odom_frame_id:=odom \
+-p freq:=20.0
+radxa@radxa-dragon-q6a:~$ ros2 topic info /scan --verbose
+Type: sensor_msgs/msg/LaserScan
+
+sed -i 's/rclcpp::SensorDataQoS()/rclcpp::QoS(10).reliable()/g' ~/ros2_ws/src/rf2o_laser_odometry/src/CLaserOdometry2DNode.cpp
+
+
+cd ~/ros2_ws
+colcon build --symlink-install --packages-select rf2o_laser_odometry
+source install/setup.bash
+
+
+nano ~/ros2_ws/src/rf2o_laser_odometry/src/CLaserOdometry2DNode.cpp
+
+source ~/ros2_ws/install/setup.bash && \
+ros2 run rf2o_laser_odometry rf2o_laser_odometry_node --ros-args \
+-r /scan:=/scan \
+-p odom_topic:=/odom \
+-p base_frame_id:=base_link \
+-p odom_frame_id:=odom \
+-p freq:=20.0
+
+cd ~/ros2_ws && rm -rf build/rf2o_laser_odometry install/rf2o_laser_odometry && colcon build --symlink-install --packages-select rf2o_laser_odometry && source install/setup.bash
+
+
+
+
+
+
+
+
+include "map_builder.lua"
+include "trajectory_builder.lua"
+
+options = {
+  map_builder = MAP_BUILDER,
+  trajectory_builder = TRAJECTORY_BUILDER,
+  map_frame = "map",
+  tracking_frame = "base_link",               -- Đổi thành "base_link" nếu KHÔNG có IMU ổn định
+  published_frame = "base_link",             -- Frame chính publish pose (thay nếu cần)
+  odom_frame = "odom",                       -- Chỉ dùng nếu provide_odom_frame = true
+  provide_odom_frame = false,                -- Tắt vì không có odom thật
+  publish_frame_projected_to_2d = true,      -- Rất quan trọng cho 2D handheld
+  use_odometry = false,                      -- Tắt odometry hoàn toàn
+  use_nav_sat = false,
+  use_landmarks = false,
+  num_laser_scans = 1,
+  num_multi_echo_laser_scans = 0,
+  num_subdivisions_per_laser_scan = 1,
+  num_point_clouds = 0,
+  lookup_transform_timeout_sec = 0.2,
+  submap_publish_period_sec = 0.3,
+  pose_publish_period_sec = 5e-3,
+  trajectory_publish_period_sec = 30e-3,
+  rangefinder_sampling_ratio = 1.,
+  odometry_sampling_ratio = 1.,
+  fixed_frame_pose_sampling_ratio = 1.,
+  imu_sampling_ratio = 1.,
+  landmarks_sampling_ratio = 1.,
+}
+
+MAP_BUILDER.use_trajectory_builder_2d = true
+
+TRAJECTORY_BUILDER_2D.min_range = 0.12
+TRAJECTORY_BUILDER_2D.max_range = 3.5
+TRAJECTORY_BUILDER_2D.missing_data_ray_length = 3.
+TRAJECTORY_BUILDER_2D.use_imu_data = false          -- Nếu có IMU tốt, bật true và publish /imu
+TRAJECTORY_BUILDER_2D.use_online_correlative_scan_matching = true  -- Bật để matching realtime tốt hơn khi không có odom
+TRAJECTORY_BUILDER_2D.motion_filter.max_angle_radians = math.rad(0.1)
+
+-- Tinh chỉnh cho handheld (giảm drift khi di chuyển tay)
+TRAJECTORY_BUILDER_2D.ceres_scan_matcher.translation_weight = 10.0   -- Tăng nếu drift tịnh tiến
+TRAJECTORY_BUILDER_2D.ceres_scan_matcher.rotation_weight = 40.0      -- Tăng để xoay chính xác hơn
+
+-- Pose graph (loop closure)
+POSE_GRAPH.constraint_builder.min_score = 0.65
+POSE_GRAPH.constraint_builder.global_localization_min_score = 0.7
+POSE_GRAPH.optimize_every_n_nodes = 30          -- Optimize thường xuyên hơn cho handheld
+POSE_GRAPH.global_sampling_ratio = 0.003
+
+return options
+
+
+
+
+
+
+
+
+ros2 run cartographer_ros cartographer_node \
+  -configuration_directory ~/ros2_ws/src/carto_jazzy_ws \
+  -configuration_basename handheld_jazzy.lua \
+  --ros-args \
+  -p use_sim_time:=false
+
+
+
+
+sudo apt update
+sudo apt install ros-jazzy-cartographer ros-jazzy-cartographer-ros ros-jazzy-cartographer-ros-msgs ros-jazzy-cartographer-rviz
+
+## cartography
+
+
+Trên ROS 2 Jazzy Jalisco (phiên bản LTS mới nhất chạy trên Ubuntu 24.04), quy trình cài đặt và các lệnh cơ bản vẫn tương tự như Humble, nhưng có một vài điểm thay đổi nhỏ về tên gói và cách quản lý môi trường.
+
+Dưới đây là các dòng lệnh cụ thể cho Jazzy để bạn thực hiện quét cầm tay:
+
+1. Cài đặt Cartographer cho Jazzy
+Mở Terminal và chạy lệnh sau để cài đặt các package chính thức từ repository của ROS:
+
+Bash
+sudo apt update
+sudo apt install ros-jazzy-cartographer ros-jazzy-cartographer-ros -y
+2. Thiết lập Workspace và File Cấu hình
+Chúng ta vẫn cần file .lua để cấu hình chế độ không dùng Odometry (vì bạn cầm tay).
+
+Bash
+mkdir -p ~/carto_jazzy_ws/src
+cd ~/carto_jazzy_ws/src
+nano handheld_jazzy.lua
+Dán nội dung cấu hình tối giản cho việc cầm tay (Pure LiDAR SLAM):
+
+Lua
+
+
+
+include "map_builder.lua"
+include "trajectory_builder.lua"
+
+options = {
+  map_builder = MAP_BUILDER,
+  trajectory_builder = TRAJECTORY_BUILDER,
+  map_frame = "map",
+  tracking_frame = "base_link",
+  published_frame = "base_link",
+  odom_frame = "odom",
+  provide_odom_frame = true,
+  publish_frame_with_odometry = false,
+  use_odometry = false,
+  use_nav_sat = false,
+  use_landmarks = false,
+  num_laser_scans = 1,
+  num_multi_echo_laser_scans = 0,
+  num_subdivisions_per_laser_scan = 1,
+  num_point_clouds = 0,
+  lookup_transform_timeout_sec = 0.2,
+  submap_publish_period_sec = 0.3,
+  pose_publish_period_sec = 5e-3,
+  trajectory_publish_period_sec = 30e-2,
+  rangefinder_sampling_ratio = 1.,
+  odometry_sampling_ratio = 1.,
+  fixed_frame_pose_sampling_ratio = 1.,
+  imu_sampling_ratio = 1.,
+  landmarks_sampling_ratio = 1.,
+}
+
+MAP_BUILDER.use_trajectory_builder_2d = true
+
+-- Cấu hình tối thiểu để tránh lỗi nil value
+TRAJECTORY_BUILDER_2D.use_imu_data = false
+TRAJECTORY_BUILDER_2D.min_range = 0.2
+TRAJECTORY_BUILDER_2D.max_range = 12.0
+TRAJECTORY_BUILDER_2D.use_online_correlative_scan_matching = true
+
+-- Lưu ý: Tạm thời KHÔNG chỉnh sửa các bảng con như .real_time_... 
+-- để Cartographer tự dùng giá trị mặc định từ file gốc của hệ thống.
+
+return options
+
+
+
+
+
+
+
+ros2 run cartographer_ros cartographer_node \
+    -configuration_directory ~/ros2_ws/src/carto_jazzy_ws \
+    -configuration_basename handheld_jazzy.lua \
+    --ros-args --remap scan:=/scan
+
+
+
+3. Các dòng lệnh thực thi (Command Line)
+Bạn nên mở 4-5 tab Terminal riêng biệt:
+
+Tab 1: Chạy Driver LiDAR
+(Giả sử bạn dùng RPLidar, nếu dùng loại khác hãy thay lệnh tương ứng)
+
+Bash
+source /opt/ros/jazzy/setup.bash
+ros2 launch rplidar_ros rplidar_a1_launch.py
+Tab 2: Khai báo vị trí LiDAR (Static TF)
+Lệnh này cực kỳ quan trọng để Cartographer hiểu mối liên hệ giữa "thân máy" và "mắt laser".
+
+Bash
+ros2 run tf2_ros static_transform_publisher --x 0 --y 0 --z 0 --yaw 0 --pitch 0 --roll 0 --frame-id base_link --child-frame-id laser
+Lưu ý: Kiểm tra xem driver LiDAR của bạn phát ra frame_id là laser hay tên khác để sửa cho đúng.
+
+Tab 3: Chạy Cartographer Node
+/home/radxa/ros2_ws/src/
+Bash
+ros2 run cartographer_ros cartographer_node \
+  -configuration_directory ~/ros2_ws/src/carto_jazzy_ws/config \
+  -configuration_basename handheld_no_odom.lua \
+  --ros-args \
+  -p use_sim_time:=false
+Tab 4: Chạy Occupancy Grid (Để tạo bản đồ 2D đen trắng)
+
+Bash
+ros2 run cartographer_ros cartographer_occupancy_grid_node -resolution 0.05
+Tab 5: Xem kết quả trên RViz2
+
+Bash
+rviz2
+Trong giao diện RViz: Add -> Map -> Chọn topic /map. Bạn sẽ thấy bản đồ hiện ra khi bạn bắt đầu di chuyển.
+
+Sơ đồ luồng dữ liệu khi quét cầm tay:
+Sự khác biệt trên Jazzy bạn cần lưu ý:
+DDS mặc định: Jazzy sử dụng Zenoh hoặc một cấu hình DDS mới giúp việc truyền tải dữ liệu scan dung lượng lớn qua Wi-Fi (nếu bạn dùng máy tính rời) ổn định hơn.
+
+Plugin RViz: Đảm bảo bạn đã cài đặt ros-jazzy-rviz2 để xem được bản đồ mượt mà.
+
+
+
+ros2 run cartographer_ros cartographer_occupancy_grid_node -resolution 0.05
